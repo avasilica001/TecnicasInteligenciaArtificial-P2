@@ -182,19 +182,17 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         #Se sigue el algoritmo de actualización de valores alpha y beta correspondiente a la poda
         def maxFunction(gameState, depth, alpha, beta):
             actualDepth = depth + 1
-            if actualDepth == self.depth:
-                return self.evaluationFunction(gameState)
-            elif gameState.isWin() or gameState.isLose():   #Evaluo si se ganó o perdió el juego
+            if gameState.isWin() or gameState.isLose() or actualDepth == self.depth:   #Evaluo si se ganó o perdió el juego
                 return self.evaluationFunction(gameState)
             maxValue = -100000000 # Inicializo con el peor caso que seria - infinito
             actions = gameState.getLegalActions(0)  #Obtengo los posibles movimientos en base al estado
             alpha_aux = alpha
             for a in actions:
                 successor = gameState.generateSuccessor(0,a)
-                maxValue = max(maxValue,minFunction(successor,actualDepth,alpha_aux,beta)) #Voy iterando recursivamente por todos los sucesores quedandome con el valor maximo
-            if maxValue > beta:
-                return maxValue
-            alpha_aux = max(alpha_aux,maxValue)
+                maxValue = max(maxValue,minFunction(successor,actualDepth,1,alpha_aux,beta)) #Voy iterando recursivamente por todos los sucesores quedandome con el valor maximo
+                if maxValue > beta:
+                    return maxValue
+                alpha_aux = max(alpha_aux,maxValue)
             return maxValue
         
         #El resto de los agentes son los fantasmas y utilizaran la función que minimiza (minFunction)
@@ -209,16 +207,16 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 successor = gameState.generateSuccessor(agentIndex,a)
                 if agentIndex == (nGhosts):
                     minValue = min(minValue,maxFunction(successor,depth, alpha, beta_aux))
-                    if alpha > minValue:
+                    if minValue < alpha : #Condicion de poda
                         return minValue
                     beta_aux = min(beta_aux, minValue)
                 else:
                     minValue = min(minValue,minFunction(successor,depth,agentIndex+1, alpha, beta_aux))
-                    if alpha > minValue:
+                    if minValue < alpha: #Condicion de poda
                         return minValue
                     beta_aux = min(beta_aux, minValue)
             return minValue
-        
+
         actions = gameState.getLegalActions(0) #Posibles movimientos
         actualScore = -100000000 #Inicializo el estado del pacman como el peor caso posible (siendo - infinito)
         alpha = -100000000 #Inicializo en los peores casos alpha y beta
@@ -231,9 +229,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             if score > actualScore:
                 nextAction = a
                 actualScore = score
-            if score > beta: #Actualizo el valor global de alpha 
-                return a
-            alpha = max(alpha,score)
+            if score > beta: #Condicion de poda
+                return nextAction #Si valor del nodo (Obtenido a traves de la funcion min) supere beta, devuelvo la acción
+            alpha = max(alpha,score) #Actualizo el valor global de alpha 
         return nextAction
         #util.raiseNotDefined()
 
