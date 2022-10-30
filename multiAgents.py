@@ -242,14 +242,47 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
     """
 
     def getAction(self, gameState):
-        """
-        Returns the expectimax action using self.depth and self.evaluationFunction
-
-        All ghosts should be modeled as choosing uniformly at random from their
-        legal moves.
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        def maxFunction(gameState, depth):
+            actualDepth = depth + 1
+            if actualDepth == self.depth:
+                return self.evaluationFunction(gameState)
+            elif gameState.isWin() or gameState.isLose():   #Evaluo si se ganó o perdió el juego
+                return self.evaluationFunction(gameState)
+            maxValue = -100000000 # Inicializo con el peor caso que seria - infinito
+            actions = gameState.getLegalActions(0)  #Obtengo los posibles movimientos en base al estado
+            for a in actions:
+                successor = gameState.generateSuccessor(0,a)
+                maxValue = max(maxValue,expFunction(successor,actualDepth,1)) #Voy iterando recursivamente por todos los sucesores quedandome con el valor maximo
+            return maxValue
+        
+        #El resto de los agentes son los fantasmas y utilizaran la función que expectimax para que todos los casos posibles tengan misma probabilidad
+        def expFunction(gameState,depth, agentIndex):
+            num=0.0
+            nGhosts = gameState.getNumAgents() - 1 # Cantidad de fantasmas, -1 ya que uno de los agentes es el Pacman con indice 0
+            if gameState.isWin() or gameState.isLose():   #Evaluo si el juego terminó o no
+                return self.evaluationFunction(gameState)
+            actions = gameState.getLegalActions(agentIndex)
+            for a in actions:
+                successor= gameState.generateSuccessor(agentIndex,a)
+                if agentIndex == (nGhosts):
+                    num+=maxFunction(successor,depth)/float(len(actions))
+                else:
+                    successor= gameState.generateSuccessor(agentIndex,a)
+                    num+= expFunction(successor,depth,agentIndex+1)/float(len(actions))
+            return num
+        
+        actions = gameState.getLegalActions(0) #Posibles movimientos
+        actualScore = -100000000 #Inicializo el estado del pacman como el peor caso posible (siendo - infinito)
+        nextAction = '' #La acción final que tomara el pacman
+        for a in actions:
+            nextState = gameState.generateSuccessor(0,a) #En base a las acciones posibles, voy generando los estados sucesores
+            #Considerando al pacman como el vaor root, llamo a minFunction ya que el siguiente nivel del árbol será el caso de un fantasma
+            score = expFunction(nextState,0,1) 
+            if score > actualScore:  # Me quedo con la acción de valor que minimiza de todos los sucesores.
+                nextAction = a
+                actualScore = score
+        return nextAction
 
 def betterEvaluationFunction(currentGameState):
     """
